@@ -1,5 +1,12 @@
 require('dotenv').config();
 
+const http = require('http');
+
+http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('Ticket Bot Running');
+}).listen(process.env.PORT || 3000);
+
 const {
   Client,
   GatewayIntentBits,
@@ -39,16 +46,19 @@ client.on('messageCreate', async (message) => {
       .addOptions([
         {
           label: 'General Support',
+          description: 'General help and questions',
           value: 'general',
           emoji: '🔔'
         },
         {
           label: 'Rewards',
+          description: 'Claim any rewards',
           value: 'rewards',
           emoji: '💰'
         },
         {
           label: 'Giveaway Claim',
+          description: 'Claim your giveaway prize',
           value: 'giveaway',
           emoji: '🎁'
         }
@@ -57,7 +67,12 @@ client.on('messageCreate', async (message) => {
     const row = new ActionRowBuilder().addComponents(menu);
 
     await message.channel.send({
-      content: '🎫 Ticket System',
+      embeds: [
+        new EmbedBuilder()
+          .setColor('#5865F2')
+          .setTitle('🎫 Ticket System')
+          .setDescription('Choose a category below to create a ticket.')
+      ],
       components: [row]
     });
   }
@@ -73,6 +88,7 @@ client.on('interactionCreate', async interaction => {
     let subject;
 
     switch (interaction.values[0]) {
+
       case 'general':
         category = GENERAL;
         subject = 'General Support';
@@ -99,7 +115,9 @@ client.on('interactionCreate', async interaction => {
       .setColor('#5865F2')
       .setTitle('🎫 Support Ticket Created')
       .setDescription(
-`${interaction.user} Your support ticket has been created.
+`${interaction.user}
+
+Your support ticket has been created.
 
 A staff member will be with you shortly.
 
@@ -107,7 +125,7 @@ A staff member will be with you shortly.
 ${subject}`
       )
       .setFooter({
-        text: 'Smart Ticketing • Today'
+        text: 'Smart Ticketing • Powered by Ticket Bot'
       });
 
     const buttons = new ActionRowBuilder()
@@ -150,26 +168,34 @@ ${subject}`
       await interaction.reply({
         content: `🎯 Ticket claimed by ${interaction.user}`
       });
+    }
 
-    } else if (interaction.customId === 'pin') {
+    if (interaction.customId === 'pin') {
 
       const messages = await interaction.channel.messages.fetch({ limit: 1 });
 
-      await messages.first().pin();
+      if (messages.first()) {
+        await messages.first().pin();
+      }
 
       await interaction.reply({
         content: '📌 Ticket pinned.',
         ephemeral: true
       });
+    }
 
-    } else if (interaction.customId === 'close') {
+    if (interaction.customId === 'close') {
 
       await interaction.reply({
-        content: '🔒 Closing ticket in 5 seconds...'
+        content: '🔒 Ticket will close in 5 seconds...'
       });
 
       setTimeout(async () => {
-        await interaction.channel.delete();
+        try {
+          await interaction.channel.delete();
+        } catch (err) {
+          console.error(err);
+        }
       }, 5000);
     }
   }
